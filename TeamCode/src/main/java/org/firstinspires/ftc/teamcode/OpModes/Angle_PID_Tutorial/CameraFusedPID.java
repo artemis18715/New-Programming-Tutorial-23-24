@@ -44,7 +44,7 @@ public class CameraFusedPID extends LinearOpMode {
     /** MAKE SURE TO CHANGE THE FOV AND THE RESOLUTIONS ACCORDINGLY **/
     private static final int CAMERA_WIDTH = 640; // width  of wanted camera resolution
     private static final int CAMERA_HEIGHT = 360; // height of wanted camera resolution
-    private static final double FOV = 0;
+    private static final double FOV = 40;
 
     // Calculate the distance using the formula
     public static final double objectWidthInRealWorldUnits = 3.75;  // Replace with the actual width of the object in real-world units
@@ -70,6 +70,7 @@ public class CameraFusedPID extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
+            telemetry.addData("Target IMU Angle", getAngleTarget(cX));
             telemetry.addData("Current IMU Angle", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
             double power = PIDControl(Math.toRadians(0 + getAngleTarget(cX)), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
             drivetrain.power(power);
@@ -179,7 +180,7 @@ public class CameraFusedPID extends LinearOpMode {
 
     }
     private static double getAngleTarget(double objMidpoint){
-        double midpoint = -((objMidpoint - (CAMERA_WIDTH/2)*FOV)/CAMERA_WIDTH);
+        double midpoint = -((objMidpoint - (CAMERA_WIDTH/2))*FOV)/CAMERA_WIDTH;
         return midpoint;
     }
     private static double getDistance(double width){
