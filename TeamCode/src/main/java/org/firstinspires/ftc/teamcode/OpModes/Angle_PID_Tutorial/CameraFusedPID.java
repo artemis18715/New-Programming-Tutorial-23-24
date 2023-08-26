@@ -11,13 +11,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import org.openftc.easyopencv.OpenCvCamera;
@@ -28,7 +22,7 @@ import org.openftc.easyopencv.OpenCvPipeline;
 import java.util.ArrayList;
 import java.util.List;
 
-@TeleOp(name = "OpenCV Testing")
+@TeleOp(name = "Cone Tracker")
 
 public class CameraFusedPID extends LinearOpMode {
     double integralSum = 0;
@@ -42,12 +36,12 @@ public class CameraFusedPID extends LinearOpMode {
     private double lastError = 0;
 
     private BNO055IMU imu;
-
     double cX = 0;
     double cY = 0;
     double width = 0;
 
     private OpenCvCamera controlHubCam;  // Use OpenCvCamera class from FTC SDK
+    /** MAKE SURE TO CHANGE THE FOV AND THE RESOLUTIONS ACCORDINGLY **/
     private static final int CAMERA_WIDTH = 640; // width  of wanted camera resolution
     private static final int CAMERA_HEIGHT = 360; // height of wanted camera resolution
     private static final double FOV = 0;
@@ -67,8 +61,6 @@ public class CameraFusedPID extends LinearOpMode {
         parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
         imu.initialize(parameters);
 
-        double refrenceAngle = Math.toRadians(90);
-
         initOpenCV();
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
@@ -78,10 +70,11 @@ public class CameraFusedPID extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
+            telemetry.addData("Current IMU Angle", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+            double power = PIDControl(Math.toRadians(0 + getAngleTarget(cX)), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
+            drivetrain.power(power);
             telemetry.addData("Coordinate", "(" + (int) cX + ", " + (int) cY + ")");
             telemetry.addData("Distance in Inch", (getDistance(width)));
-            double power = PIDControl(refrenceAngle, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
-            drivetrain.power(power);
             telemetry.update();
 
             // The OpenCV pipeline automatically processes frames and handles detection
@@ -189,6 +182,10 @@ public class CameraFusedPID extends LinearOpMode {
         double midpoint = -((objMidpoint - (CAMERA_WIDTH/2)*FOV)/CAMERA_WIDTH);
         return midpoint;
     }
+    private static double getDistance(double width){
+        double distance = (objectWidthInRealWorldUnits * focalLength) / width;
+        return distance;
+    }
     public double PIDControl(double refrence, double state) {
         double error = angleWrap(refrence - state);
         telemetry.addData("Error: ", error);
@@ -207,10 +204,6 @@ public class CameraFusedPID extends LinearOpMode {
             radians += 2 * Math.PI;
         }
         return radians;
-    }
-    private static double getDistance(double width){
-        double distance = (objectWidthInRealWorldUnits * focalLength) / width;
-        return distance;
     }
 
 
